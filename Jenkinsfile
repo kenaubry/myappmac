@@ -19,27 +19,33 @@ pipeline {
         stage('Déployer en Test') {
             steps {
                 script {
-                    sh '/bin/sh docker run -d -p 3001:3000 -e MESSAGE="Environnement de Test" --name myapp-test myapp:${env.BUILD_ID}'
-
+                    // Lancer le conteneur en mode test
+                    sh 'docker run -d -p 3001:3000 -e MESSAGE="Environnement de Test" --name myapp-test myapp:${env.BUILD_ID}'
                 }
             }
         }
 
         stage('Tests') {
             steps {
-                sh '/bin/sh ping -n 6 127.0.0.1 > nul'
-                sh '/bin/sh curl http://localhost:3001'
+                // Ping pour vérifier si le conteneur répond
+                sh 'ping -c 6 127.0.0.1'
+
+                // Tester l'application via curl
+                sh 'curl http://localhost:3001'
             }
         }
 
         stage('Déployer en Production') {
             steps {
                 script {
+                    // Demander une confirmation manuelle avant le déploiement
                     def userInput = input(
                         message: "Voulez-vous déployer en production ?",
                         ok: "Déployer"
                     )
-                    sh '/bin/sh docker run -d -p 3000:3000 -e MESSAGE="Environnement de Production" --name myapp-prod myapp:${env.BUILD_ID}'
+
+                    // Lancer le conteneur en mode production
+                    sh 'docker run -d -p 3000:3000 -e MESSAGE="Environnement de Production" --name myapp-prod myapp:${env.BUILD_ID}'
                 }
             }
         }
@@ -48,7 +54,8 @@ pipeline {
     post {
         always {
             script {
-                sh '/bin/sh docker rm -f myapp-test || exit 0'
+                // Supprimer le conteneur de test
+                sh 'docker rm -f myapp-test || true'
             }
         }
     }
